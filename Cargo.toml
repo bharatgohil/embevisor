@@ -1,0 +1,28 @@
+[package]
+name = "embevisor"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Optional dependencies
+tock-registers = { version = "0.7.x" }
+
+# Platform specific dependencies
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+cortex-a = { version = "6.x.x" }
+
+
+[build]
+target = "aarch64-unknown-none-softfloat" 
+
+[[bin]]
+name = "kernel"
+path = "src/kernel.rs"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
