@@ -37,10 +37,21 @@ _start:
 	b.ne	.L_parking_loop
 
 	// If execution reaches here, it is the boot core.
-
+	mrs x0, CurrentEL
+	lsr x0, x0, #2
+	cmp x0, #2
+	bne setup_c
+	msr sctlr_el1, xzr
+	mov x0, #(1<<31)
+	msr hcr_el2, x0
+	ldr x2, =vector_table
+	msr vbar_el2, x2
+	msr vbar_el1, x1
+setup_c:
 	// Initialize DRAM.
 	ADR_REL	x0, __bss_start
 	ADR_REL x1, __bss_end_exclusive
+
 
 .L_bss_init_loop:
 	cmp	x0, x1
@@ -61,7 +72,7 @@ _start:
 .L_parking_loop:
 	wfe
 	b	.L_parking_loop
-
+	 
 .size	_start, . - _start
 .type	_start, function
 .global	_start

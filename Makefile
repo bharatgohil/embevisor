@@ -73,7 +73,8 @@ nm: $(KERNEL_ELF)
 size: $(KERNEL_ELF)
 	$(SIZE_BINARY) $(KERNEL_ELF)
 
-
+qemu:
+	qemu-system-aarch64 -M raspi3 -serial stdio -kernel kernel8.img
 ##------------------------------------------------------------------------------
 ## Clean
 ##------------------------------------------------------------------------------

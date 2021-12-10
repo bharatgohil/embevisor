@@ -1,3 +1,4 @@
+use core::fmt;
 use cortex_a::asm;
 pub use asm::nop;
 
@@ -182,5 +183,13 @@ impl BcmUart {
             asm::nop();
         }    
         self.registers.DR.get() as u8 as char
+    }
+}
+
+impl fmt::Write for BcmUart {
+
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.write_string(s);
+        Ok(())
     }
 }
