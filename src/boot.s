@@ -44,9 +44,13 @@ _start:
 	msr sctlr_el1, xzr
 	mov x0, #(1<<31)
 	msr hcr_el2, x0
-	ldr x2, =vector_table
-	msr vbar_el2, x2
-	msr vbar_el1, x1
+
+	mov x0, #0b1111000101
+	msr spsr_el2, x0
+	adr x0, setup_c
+	msr elr_el2, x0
+	eret
+
 setup_c:
 	// Initialize DRAM.
 	ADR_REL	x0, __bss_start
@@ -65,6 +69,11 @@ setup_c:
 	ADR_REL	x0, __boot_core_stack_end_exclusive
 	mov	sp, x0
 
+	ldr x2, =vector_table
+	msr vbar_el1, x2
+
+	mrs x0, CurrentEL
+	lsr x0, x0, #2
 	// Jump to Rust code.
 	b	_start_kernel
 
