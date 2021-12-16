@@ -69,12 +69,12 @@ setup_c:
 	ADR_REL	x0, __boot_core_stack_end_exclusive
 	mov	sp, x0
 
-	ldr x2, =vector_table
+	ldr x2, =__vector_table
 	msr vbar_el1, x2
 
+	// Jump to Rust code.
 	mrs x0, CurrentEL
 	lsr x0, x0, #2
-	// Jump to Rust code.
 	b	_start_kernel
 
 	// Infinitely wait for events (aka "park the core").
