@@ -4,17 +4,20 @@
 #![no_std]
 
 mod uart;
+use cortex_a::registers::*;
+use tock_registers::interfaces::Readable;
 //use tock_registers::interfaces::Readable;
 use uart::BcmUart;
 mod timer;
 use timer::BcmTmr;
+mod mmu;
+use mmu::MMU;
 /*mod irq;
 use irq::BcmIrq;
 */
 //use core::fmt;
 mod panic;
-use core::fmt::Write;
-
+use core::fmt::{Write};
 
 pub fn timer_irq_handler() {
     let mut uart = BcmUart::new (uart::UART0_START);
@@ -25,12 +28,13 @@ pub fn timer_irq_handler() {
     }
 }    
 
-global_asm!(include_str!("vectors.s"));
+global_asm!(include_str!("vectors.S"));
 #[no_mangle]
 pub fn _handler(exp_typ: u64, esr: u64, elr: u64) {
     let mut uart = BcmUart::new (uart::UART0_START);
     let tmr = BcmTmr::new(timer::TIMER_START);
     //write!(&mut uart, "Hello World {:X},{:X}", esr,elr).unwrap();
+    tmr.init();
     match exp_typ {
         0=>write!(&mut uart, "unhandled exp").unwrap(),
         1=>write!(&mut uart, "sync exp 0x{:X}:0x{:X}", esr, elr).unwrap(),
@@ -45,19 +49,33 @@ pub fn _handler(exp_typ: u64, esr: u64, elr: u64) {
     }  
 }
 
-global_asm!(include_str!("boot.s"));
+global_asm!(include_str!("boot.S"));
 #[no_mangle]
-pub fn _start_kernel(el:u32) -> ! {
+pub fn _start_kernel(_vector_table: u64) -> ! {
     let mut uart = BcmUart::new (uart::UART0_START);
-    let tmr = BcmTmr::new(timer::TIMER_START);
+    let mmu = MMU::new(); 
+    //let tmr = BcmTmr::new(timer::TIMER_START);
     /*let irq = BcmIrq::new(irq::IRQ_START);*/
     uart.init();
-    tmr.init();
+    
+    let el = CurrentEL.read_as_enum(CurrentEL::EL);
+    match el {
+        Some(CurrentEL::EL::Value::EL2)=>{
+            write!(&mut uart, "Booted in EL2").unwrap();
+            mmu.init();
+            mmu.create_page_table();
+        },
+        Some(CurrentEL::EL::Value::EL1)=>{
+            write!(&mut uart, "Booted in EL1").unwrap();
+        },
+        Some(CurrentEL::EL::Value::EL0)=>{
+            write!(&mut uart, "Booted in EL0").unwrap();
+        },
+        _ =>  write!(&mut uart, "Unknown exception level").unwrap(),
+    }
+    //tmr.init();
     /*irq.init();*/
     
-    //fmt::Write::write_str(&mut uart, "Hello world").unwrap();
-    write!(&mut uart, "Hello World....0x{:X}", el).unwrap();
-    //uart.write_string("Hello World");
     /*let fake_exp = unsafe{&mut *(0xFFFF_0000_0000_0000 as *mut u64)};
     *(fake_exp) = 0xFFFF_0000_0000_0000;*/
     loop{
