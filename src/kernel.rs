@@ -5,7 +5,7 @@
 
 mod uart;
 use cortex_a::registers::*;
-use tock_registers::interfaces::Readable;
+use tock_registers::interfaces::{Readable};
 //use tock_registers::interfaces::Readable;
 use uart::BcmUart;
 mod timer;
@@ -51,12 +51,13 @@ pub fn _handler(exp_typ: u64, esr: u64, elr: u64) {
 
 global_asm!(include_str!("boot.S"));
 #[no_mangle]
-pub fn _start_kernel(_vector_table: u64) -> ! {
+pub unsafe fn _start_kernel(_vector_table: u64) -> ! {
     let mut uart = BcmUart::new (uart::UART0_START);
-    let mmu = MMU::new(); 
+    let mut mmu = MMU::new(0); 
     //let tmr = BcmTmr::new(timer::TIMER_START);
     /*let irq = BcmIrq::new(irq::IRQ_START);*/
     uart.init();
+    
     
     let el = CurrentEL.read_as_enum(CurrentEL::EL);
     match el {
@@ -64,6 +65,8 @@ pub fn _start_kernel(_vector_table: u64) -> ! {
             write!(&mut uart, "Booted in EL2").unwrap();
             mmu.init();
             mmu.create_page_table();
+            mmu.enable_mmu();
+            write!(&mut uart, "MMU Online Now").unwrap();
         },
         Some(CurrentEL::EL::Value::EL1)=>{
             write!(&mut uart, "Booted in EL1").unwrap();
@@ -75,8 +78,10 @@ pub fn _start_kernel(_vector_table: u64) -> ! {
     }
     //tmr.init();
     /*irq.init();*/
-    
-    /*let fake_exp = unsafe{&mut *(0xFFFF_0000_0000_0000 as *mut u64)};
+   
+    write!(&mut uart, "Entring into loop").unwrap();
+   
+    /*let fake_exp = {&mut *(0xFFFF_0000_0000_0000 as *mut u64)};
     *(fake_exp) = 0xFFFF_0000_0000_0000;*/
     loop{
         uart.write_char(uart.read_char() as char);

@@ -17,6 +17,7 @@ initiate_rust:
     mov sp, x0
 
     ldr x0, =__vector_table
+    msr vbar_el2, x0
     /*Jump to Rust code*/
     b _start_kernel
 
